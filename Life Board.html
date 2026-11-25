@@ -1,0 +1,461 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Life Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one board shaped like a GitHub contribution graph (45 weeks x 7 days), stats above, controls below. */
+:root {
+  --bg: #f7f9f8;
+  --surface: #ffffff;
+  --fg: #16201b;
+  --muted: #5b6862;
+  --line: #d9e1dd;
+  --accent: #216e39;
+  --on-accent: #ffffff;
+  --c0: #e3e9e5;
+  --c1: #9be9a8;
+  --c2: #40c463;
+  --c3: #30a14e;
+  --c4: #216e39;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1210;
+    --surface: #141b18;
+    --fg: #e6efe9;
+    --muted: #93a39b;
+    --line: #26312c;
+    --accent: #39d353;
+    --on-accent: #08130c;
+    --c0: #212b26;
+    --c1: #0e4429;
+    --c2: #006d32;
+    --c3: #26a641;
+    --c4: #39d353;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1210;
+  --surface: #141b18;
+  --fg: #e6efe9;
+  --muted: #93a39b;
+  --line: #26312c;
+  --accent: #39d353;
+  --on-accent: #08130c;
+  --c0: #212b26;
+  --c1: #0e4429;
+  --c2: #006d32;
+  --c3: #26a641;
+  --c4: #39d353;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin: 0;
+  text-wrap: balance;
+}
+.lede { color: var(--muted); margin: 6px 0 0; max-width: 60ch; font-size: 0.95rem; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.stat { display: flex; flex-direction: column; min-width: 0; }
+.stat .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.stat .v { font-family: var(--font-display); font-weight: 500; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.stat .v.status { font-size: 1.05rem; line-height: 1.7; }
+
+.board-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+.board-box { width: 100%; }
+canvas#board { display: block; touch-action: none; cursor: crosshair; border-radius: 4px; }
+
+.legend { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 10px; font-size: 0.75rem; color: var(--muted); }
+.legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font: 500 0.9rem var(--font-body);
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); min-width: 84px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--muted); }
+.opt input[type=range] { width: 120px; accent-color: var(--accent); }
+.opt input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+.rules { color: var(--muted); font-size: 0.85rem; margin: 0; max-width: 70ch; }
+.rules b { color: var(--fg); font-weight: 600; }
+
+.io { display: flex; flex-direction: column; gap: 10px; }
+.io .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+textarea {
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.msg { margin: 0; min-height: 1.3em; font-size: 0.85rem; color: var(--muted); }
+.msg.err { color: var(--fg); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Life Board</h1>
+    <p class="lede">Conway's Game of Life on a 45 &times; 7 grid, the same shape as a GitHub contribution graph. Click or drag on the board to draw cells.</p>
+  </header>
+
+  <div class="stats" aria-live="off">
+    <div class="stat"><span class="k">Generation</span><span class="v" id="gen">0</span></div>
+    <div class="stat"><span class="k">Alive</span><span class="v" id="pop">0</span></div>
+    <div class="stat"><span class="k">Status</span><span class="v status" id="status" aria-live="polite">Evolving</span></div>
+  </div>
+
+  <div class="board-card">
+    <div class="board-box" id="box">
+      <canvas id="board" role="img" aria-label="Game of Life board, 45 columns by 7 rows"></canvas>
+    </div>
+    <div class="legend" aria-hidden="true">
+      <span>Newborn</span>
+      <i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i>
+      <span>Veteran</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="btns">
+      <button class="primary" id="play" type="button">Pause</button>
+      <button id="step" type="button">Step</button>
+      <button id="random" type="button">Random</button>
+      <button id="clear" type="button">Clear</button>
+    </div>
+    <label class="opt" for="speed">Speed <input id="speed" type="range" min="1" max="20" value="8"></label>
+    <label class="opt" for="wrapedges"><input id="wrapedges" type="checkbox" checked> Wrap edges</label>
+  </div>
+
+  <section class="io">
+    <label class="k" for="cfg">Save or load a setup</label>
+    <textarea id="cfg" rows="10" spellcheck="false" placeholder='Press "Export current" to fill this box, or paste a saved setup here and press "Import".'></textarea>
+    <div class="btns">
+      <button id="export" type="button">Export current</button>
+      <button id="copy" type="button">Copy</button>
+      <button id="import" type="button">Import</button>
+      <button id="file" type="button">Load from file</button>
+      <input id="filein" type="file" accept=".json,.txt,application/json,text/plain" hidden>
+    </div>
+    <p class="msg" id="iomsg" role="status"></p>
+  </section>
+
+  <p class="rules"><b>Rules:</b> a live cell with 2 or 3 live neighbours survives, a dead cell with exactly 3 is born, everything else dies or stays empty. Shade shows how many generations a cell has lived.</p>
+</div>
+
+<script>
+(function () {
+  var COLS = 45, ROWS = 7, N = COLS * ROWS;
+  var grid = new Uint8Array(N), age = new Uint8Array(N);
+  var gen = 0, playing = false, timer = null;
+  var seen = new Map();
+  var canvas = document.getElementById('board');
+  var ctx = canvas.getContext('2d');
+  var box = document.getElementById('box');
+  var LABEL_W = 30;
+  var geo = { cell: 8, gap: 2, w: 0, h: 0 };
+
+  var el = {
+    gen: document.getElementById('gen'),
+    pop: document.getElementById('pop'),
+    status: document.getElementById('status'),
+    play: document.getElementById('play'),
+    step: document.getElementById('step'),
+    random: document.getElementById('random'),
+    clear: document.getElementById('clear'),
+    speed: document.getElementById('speed'),
+    wrap: document.getElementById('wrapedges')
+  };
+
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function layout() {
+    var w = Math.max(240, box.clientWidth);
+    var boardW = w - LABEL_W;
+    var gap = Math.max(1.5, boardW / COLS * 0.16);
+    var cell = (boardW - gap * (COLS - 1)) / COLS;
+    var h = ROWS * cell + gap * (ROWS - 1) + 2;
+    var dpr = window.devicePixelRatio || 1;
+    geo = { cell: cell, gap: gap, w: w, h: h };
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  function level(a) { return a <= 1 ? 1 : a <= 3 ? 2 : a <= 7 ? 3 : 4; }
+
+  function rr(x, y, s, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, s, s, r); } else { ctx.rect(x, y, s, s); }
+    ctx.fill();
+  }
+
+  function draw() {
+    var cols = [css('--c0'), css('--c1'), css('--c2'), css('--c3'), css('--c4')];
+    ctx.clearRect(0, 0, geo.w, geo.h);
+    ctx.fillStyle = css('--muted');
+    ctx.font = '10px ' + css('--font-body');
+    ctx.textBaseline = 'middle';
+    var days = { 1: 'Mon', 3: 'Wed', 5: 'Fri' };
+    for (var d in days) {
+      ctx.fillText(days[d], 0, 1 + d * (geo.cell + geo.gap) + geo.cell / 2);
+    }
+    var radius = Math.max(1, geo.cell * 0.2);
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        var i = r * COLS + c;
+        ctx.fillStyle = grid[i] ? cols[level(age[i])] : cols[0];
+        rr(LABEL_W + c * (geo.cell + geo.gap), 1 + r * (geo.cell + geo.gap), geo.cell, radius);
+      }
+    }
+  }
+
+  function neighbors(i) {
+    var r = (i / COLS) | 0, c = i % COLS, n = 0;
+    var wrap = el.wrap.checked;
+    for (var dr = -1; dr <= 1; dr++) {
+      for (var dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        var y = r + dr, x = c + dc;
+        if (wrap) { y = (y + ROWS) % ROWS; x = (x + COLS) % COLS; }
+        else if (y < 0 || y >= ROWS || x < 0 || x >= COLS) continue;
+        n += grid[y * COLS + x];
+      }
+    }
+    return n;
+  }
+
+  function population() { var p = 0; for (var i = 0; i < N; i++) p += grid[i]; return p; }
+
+  function evaluate(autoPause) {
+    var pop = population();
+    var key = Array.prototype.join.call(grid, '');
+    var status;
+    var stop = false;
+    if (!pop) { status = 'Extinct'; stop = true; }
+    else if (seen.has(key)) {
+      var p = gen - seen.get(key);
+      if (p === 1) { status = 'Stable'; stop = true; }
+      else { status = 'Repeating every ' + p + ' gens'; }
+    } else { status = 'Evolving'; }
+    seen.set(key, gen);
+    if (seen.size > 300) { seen.delete(seen.keys().next().value); }
+    el.gen.textContent = gen;
+    el.pop.textContent = pop;
+    if (el.status.textContent !== status) el.status.textContent = status;
+    canvas.setAttribute('aria-label', 'Game of Life board, 45 columns by 7 rows, ' + pop + ' cells alive');
+    if (autoPause && stop && playing) setPlaying(false);
+  }
+
+  function step() {
+    var ng = new Uint8Array(N), na = new Uint8Array(N);
+    for (var i = 0; i < N; i++) {
+      var n = neighbors(i);
+      if (grid[i] ? (n === 2 || n === 3) : n === 3) {
+        ng[i] = 1;
+        na[i] = grid[i] ? Math.min(age[i] + 1, 99) : 1;
+      }
+    }
+    grid = ng; age = na; gen++;
+    draw();
+    evaluate(true);
+  }
+
+  function reset(fill) {
+    for (var i = 0; i < N; i++) {
+      grid[i] = fill ? (Math.random() < 0.3 ? 1 : 0) : 0;
+      age[i] = grid[i];
+    }
+    gen = 0; seen.clear();
+    draw();
+    evaluate(false);
+  }
+
+  function tick() {
+    if (!playing) return;
+    step();
+    if (playing) timer = setTimeout(tick, 1000 / Number(el.speed.value));
+  }
+
+  function setPlaying(on) {
+    playing = on;
+    clearTimeout(timer);
+    el.play.textContent = on ? 'Pause' : 'Play';
+    if (on) timer = setTimeout(tick, 1000 / Number(el.speed.value));
+  }
+
+  /* drawing with the pointer */
+  var painting = false, paintVal = 1;
+  function cellAt(e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left - LABEL_W, y = e.clientY - rect.top - 1;
+    if (x < 0 || y < 0) return -1;
+    var pitch = geo.cell + geo.gap;
+    var c = Math.floor(x / pitch), r = Math.floor(y / pitch);
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return -1;
+    return r * COLS + c;
+  }
+  function paint(e) {
+    var i = cellAt(e);
+    if (i < 0 || grid[i] === paintVal) return;
+    grid[i] = paintVal; age[i] = paintVal;
+    seen.clear();
+    draw();
+    evaluate(false);
+  }
+  canvas.addEventListener('pointerdown', function (e) {
+    var i = cellAt(e);
+    if (i < 0) return;
+    painting = true;
+    paintVal = grid[i] ? 0 : 1;
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    paint(e);
+  });
+  canvas.addEventListener('pointermove', function (e) { if (painting) paint(e); });
+  function endPaint() { painting = false; }
+  canvas.addEventListener('pointerup', endPaint);
+  canvas.addEventListener('pointercancel', endPaint);
+
+  el.play.addEventListener('click', function () { setPlaying(!playing); });
+  el.step.addEventListener('click', function () { setPlaying(false); step(); });
+  el.random.addEventListener('click', function () { reset(true); if (!playing) setPlaying(true); });
+  el.clear.addEventListener('click', function () { setPlaying(false); reset(false); });
+  el.wrap.addEventListener('change', function () { seen.clear(); });
+
+  /* export / import */
+  var cfg = document.getElementById('cfg'), iomsg = document.getElementById('iomsg');
+  var filein = document.getElementById('filein');
+  function say(t, err) { iomsg.textContent = t; iomsg.className = 'msg' + (err ? ' err' : ''); }
+  function rowsText() {
+    var out = [];
+    for (var r = 0; r < ROWS; r++) {
+      var s = '';
+      for (var c = 0; c < COLS; c++) s += grid[r * COLS + c] ? '#' : '.';
+      out.push(s);
+    }
+    return out;
+  }
+  function exportCfg() {
+    cfg.value = JSON.stringify({
+      app: 'life-board', version: 1, cols: COLS, rows: ROWS,
+      wrap: el.wrap.checked, speed: Number(el.speed.value), cells: rowsText()
+    }, null, 2);
+    say('Exported ' + population() + ' live cells. Copy this text to keep it.');
+  }
+  function parseCfg(text) {
+    var t = text.trim(), data, cells, wrap = null, speed = null;
+    if (!t) throw new Error('There is nothing to import. Paste a saved setup first.');
+    if (t.charAt(0) === '{') {
+      try { data = JSON.parse(t); } catch (e) { throw new Error('That is not valid JSON.'); }
+      if ((data.cols !== undefined && data.cols !== COLS) || (data.rows !== undefined && data.rows !== ROWS)) {
+        throw new Error('This setup is for a different grid size. This board is ' + COLS + ' x ' + ROWS + '.');
+      }
+      cells = data.cells;
+      wrap = typeof data.wrap === 'boolean' ? data.wrap : null;
+      speed = (Number.isInteger(data.speed) && data.speed >= 1 && data.speed <= 20) ? data.speed : null;
+    } else {
+      cells = t.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    }
+    if (!Array.isArray(cells) || cells.length !== ROWS) throw new Error('Expected ' + ROWS + ' rows of cells.');
+    for (var r = 0; r < ROWS; r++) {
+      if (typeof cells[r] !== 'string' || cells[r].length !== COLS || /[^.#]/.test(cells[r])) {
+        throw new Error('Row ' + (r + 1) + ' must be exactly ' + COLS + ' characters of "." and "#".');
+      }
+    }
+    return { cells: cells, wrap: wrap, speed: speed };
+  }
+  function importCfg() {
+    var p;
+    try { p = parseCfg(cfg.value); } catch (e) { say("Couldn't import: " + e.message, true); return; }
+    setPlaying(false);
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        var v = p.cells[r].charAt(c) === '#' ? 1 : 0;
+        grid[r * COLS + c] = v; age[r * COLS + c] = v;
+      }
+    }
+    if (p.wrap !== null) el.wrap.checked = p.wrap;
+    if (p.speed !== null) el.speed.value = p.speed;
+    gen = 0; seen.clear();
+    draw();
+    evaluate(false);
+    say('Loaded ' + population() + ' live cells. Press Play to run it.');
+  }
+  document.getElementById('export').addEventListener('click', exportCfg);
+  document.getElementById('import').addEventListener('click', importCfg);
+  document.getElementById('copy').addEventListener('click', function () {
+    if (!cfg.value.trim()) exportCfg();
+    cfg.select();
+    var done = function () { say('Copied to clipboard.'); };
+    var fail = function () { say('Copy was blocked here. The text is selected: press Ctrl+C (or Cmd+C).', true); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(cfg.value).then(done, fail); }
+    else { fail(); }
+  });
+  document.getElementById('file').addEventListener('click', function () { filein.click(); });
+  filein.addEventListener('change', function () {
+    var f = filein.files && filein.files[0];
+    if (!f) return;
+    if (f.size > 100000) { say("Couldn't import: that file is too large for a setup.", true); filein.value = ''; return; }
+    var fr = new FileReader();
+    fr.onload = function () { cfg.value = String(fr.result); importCfg(); filein.value = ''; };
+    fr.onerror = function () { say('Could not read that file.', true); };
+    fr.readAsText(f);
+  });
+
+  window.addEventListener('resize', layout);
+  if (window.ResizeObserver) new ResizeObserver(layout).observe(box);
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  layout();
+  reset(true);
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setPlaying(!reduce);
+})();
+</script>
+
+</body></html>
